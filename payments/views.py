@@ -125,3 +125,7 @@ def download_receipt(request, reference):
     response = HttpResponse(pdf_buffer, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="Receipt_{reference}.pdf"'
     return response
+
+def about(request):
+    return render(request, 'about.html')
+
