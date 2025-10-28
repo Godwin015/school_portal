@@ -1,11 +1,53 @@
 from dotenv import load_dotenv
 import os
 from pathlib import Path
+
+# ===========================
+# LOAD ENVIRONMENT VARIABLES
+# ===========================
 load_dotenv()
 
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+BASE_DIR = Path(__file__).resolve().parent.parent
 
+# ===========================
+# SECURITY & DEBUG SETTINGS
+# ===========================
+SECRET_KEY = os.getenv('SECRET_KEY', 'replace-this-with-a-secure-key')
+DEBUG = True  # Set to False in production
+
+ALLOWED_HOSTS = ['*']  # You can later restrict to your Render domain
+
+# ===========================
+# INSTALLED APPS
+# ===========================
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',  # ✅ This enables collectstatic
+    'payments',  # your custom app
+]
+
+# ===========================
+# MIDDLEWARE
+# ===========================
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+# ===========================
+# URLS & WSGI
+# ===========================
+ROOT_URLCONF = 'school_portal.urls'
+WSGI_APPLICATION = 'school_portal.wsgi.application'
 
 # ===========================
 # EMAIL CONFIGURATION
@@ -21,10 +63,6 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 # ===========================
 # DATABASE CONFIGURATION
 # ===========================
-
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -35,13 +73,32 @@ DATABASES = {
 # ===========================
 # STATIC FILES CONFIGURATION
 # ===========================
-
 STATIC_URL = '/static/'
-
-# The directory where Django will collect all static files for deployment
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-# (Optional) If you have a local static directory for development
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
+
+# ===========================
+# TEMPLATES CONFIGURATION
+# ===========================
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [BASE_DIR / 'templates'],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+# ===========================
+# DEFAULT AUTO FIELD
+# ===========================
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
