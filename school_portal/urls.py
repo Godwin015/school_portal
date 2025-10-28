@@ -9,7 +9,4 @@ urlpatterns = [
     path('payments/', include('payments.urls')),
     path('', include('payments.urls')),
     path('about/', views.about, name='about'),
-]
-
-
-
+]  
