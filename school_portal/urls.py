@@ -8,4 +8,6 @@ urlpatterns = [
     path('', views.home, name='home'),  # ✅ Use your own home view
     path('payments/', include('payments.urls')),  # ✅ Keep this
     path('about/', views.about, name='about'),  # ✅ Works fine now
+    path('contact/', views.contact, name='contact'),
 ]
+
