@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 import os
+from pathlib import Path
 load_dotenv()
 
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
@@ -17,5 +18,16 @@ EMAIL_HOST_USER = 'accounts@schoolname.com'  # your sender email address
 EMAIL_HOST_PASSWORD = 'your_app_password'    # Gmail app password (not your login password)
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
+# ===========================
+# DATABASE CONFIGURATION
+# ===========================
 
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
