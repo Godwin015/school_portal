@@ -12,7 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ===========================
 # SECURITY & DEBUG SETTINGS
 # ===========================
-SECRET_KEY = os.getenv('SECRET_KEY', 'replace-this-with-a-secure-key')
+SECRET_KEY = os.getenv('SECRET_KEY', 'sk_live_27cba69033dad02cddfe327b9c27aa1063fbd8b9')
 DEBUG = True  # Set to False in production
 
 ALLOWED_HOSTS = ['*']  # You can later restrict to your Render domain
@@ -102,3 +102,4 @@ TEMPLATES = [
 # DEFAULT AUTO FIELD
 # ===========================
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
