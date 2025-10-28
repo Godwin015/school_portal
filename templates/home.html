@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}Home - Sunshine Academy{% endblock %}
+
+{% block content %}
+<section class="bg-green-700 text-white py-16 text-center">
+    <h1 class="text-4xl md:text-5xl font-bold mb-4">Welcome to Sunshine Academy</h1>
+    <p class="text-lg mb-8">Empowering young minds through education and technology.</p>
+    <a href="{% url 'pay_fees' %}"
+       class="bg-yellow-400 text-green-900 px-6 py-3 rounded-lg font-semibold hover:bg-yellow-300 transition">
+        Make Payment Online
+    </a>
+</section>
+
+<section class="py-16 px-6 md:px-20">
+    <h2 class="text-2xl md:text-3xl font-semibold text-center mb-10 text-green-800">Why Choose Us</h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+        <div class="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition">
+            <h3 class="text-xl font-bold text-green-700 mb-2">Easy Fee Payments</h3>
+            <p>Pay school fees online anytime, anywhere with our secure platform powered by Paystack.</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition">
+            <h3 class="text-xl font-bold text-green-700 mb-2">Transparent Records</h3>
+            <p>Parents get instant email receipts and the school receives real-time payment notifications.</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition">
+            <h3 class="text-xl font-bold text-green-700 mb-2">Modern Learning</h3>
+            <p>Bringing digital innovation into every classroom for better student engagement.</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

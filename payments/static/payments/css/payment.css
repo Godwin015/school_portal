@@ -1,0 +1,6 @@
+input, select {
+    transition: all 0.2s ease-in-out;
+}
+input:focus, select:focus {
+    box-shadow: 0 0 5px rgba(16, 185, 129, 0.4);
+}

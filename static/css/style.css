@@ -1,0 +1,11 @@
+html {
+  scroll-behavior: smooth;
+}
+
+a {
+  transition: color 0.2s ease;
+}
+
+button {
+  cursor: pointer;
+}
