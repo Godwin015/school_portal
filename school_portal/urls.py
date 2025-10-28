@@ -5,8 +5,7 @@ from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', TemplateView.as_view(template_name='home.html'), name='home'),
-    path('payments/', include('payments.urls')),
-    path('', include('payments.urls')),
-    path('about/', views.about, name='about'),
-]  
+    path('', views.home, name='home'),  # ✅ Use your own home view
+    path('payments/', include('payments.urls')),  # ✅ Keep this
+    path('about/', views.about, name='about'),  # ✅ Works fine now
+]
