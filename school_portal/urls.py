@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import TemplateView
+from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -9,5 +10,6 @@ urlpatterns = [
     path('', include('payments.urls')),
     path('about/', views.about, name='about'),
 ]
+
 
 
