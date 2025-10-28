@@ -31,3 +31,17 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# ===========================
+# STATIC FILES CONFIGURATION
+# ===========================
+
+STATIC_URL = '/static/'
+
+# The directory where Django will collect all static files for deployment
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# (Optional) If you have a local static directory for development
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
