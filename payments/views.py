@@ -41,22 +41,25 @@ def pay_fees(request):
 
 @csrf_exempt
 def initialize_payment(request):
-    # 🟢 Force a visible log entry in Render even if DEBUG=False
+    import sys
     print("📢 initialize_payment() triggered", file=sys.stderr)
-    
+
     if request.method == "POST":
         email = request.POST.get("email")
         amount = request.POST.get("amount")
 
+        print(f"🧾 Received form data -> email: {email}, amount: {amount}", file=sys.stderr)
+
         if not email or not amount:
+            print("⚠️ Missing email or amount", file=sys.stderr)
             return render(request, "error.html", {"message": "Email and amount are required"})
 
         try:
             amount_in_kobo = int(float(amount) * 100)
         except ValueError:
+            print("❌ Invalid amount format", file=sys.stderr)
             return render(request, "error.html", {"message": "Invalid amount"})
 
-        # ✅ Prepare headers and payload for Paystack
         headers = {
             "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
             "Content-Type": "application/json"
@@ -68,39 +71,36 @@ def initialize_payment(request):
         }
 
         try:
-            # 🚀 Send request to Paystack
+            print("🚀 Sending request to Paystack...", file=sys.stderr)
             response = requests.post(
                 f"{settings.PAYSTACK_BASE_URL}/transaction/initialize",
                 headers=headers,
-                json=data,  # ✅ use JSON instead of form data
+                json=data,
                 timeout=10
             )
 
-            # 🪵 Log HTTP status and full response
-            print("✅ Status Code:", response.status_code)
-            print("🔍 Paystack init response:", response.text)
+            print("✅ Status Code:", response.status_code, file=sys.stderr)
+            print("🔍 Paystack init response:", response.text, file=sys.stderr)
 
             result = response.json()
 
         except Exception as e:
-            # 🔥 Catch network or decoding issues
-            print("⚠️ Paystack request failed:", str(e))
+            print("⚠️ Paystack request failed:", str(e), file=sys.stderr)
             return render(
                 request,
                 "error.html",
                 {"message": f"Connection to Paystack failed: {e}"}
             )
 
-        # ✅ Check for success and redirect user to Paystack checkout
         if result.get("status") and result.get("data"):
+            print("✅ Redirecting user to Paystack", file=sys.stderr)
             return redirect(result["data"]["authorization_url"])
         else:
-            # ❌ Show detailed error message if Paystack rejected request
             error_message = result.get("message", "Error initializing payment")
-            print("🚫 Paystack Error Message:", error_message)
+            print("🚫 Paystack Error Message:", error_message, file=sys.stderr)
             return render(request, "error.html", {"message": f"Paystack Error: {error_message}"})
 
-    # ✅ If user visits the page directly (not POST)
+    print("ℹ️ GET request received for initialize_payment", file=sys.stderr)
     return render(request, "payments/payment_form.html")
 
 # ===========================================
@@ -167,6 +167,7 @@ def download_receipt(request, reference):
 # ===========================================
 def about(request):
     return render(request, 'about.html')
+
 
 
 
