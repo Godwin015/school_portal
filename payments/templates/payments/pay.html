@@ -1,0 +1,37 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>School Fee Payment</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center">
+
+  <div class="bg-white shadow-lg rounded-lg p-8 max-w-md w-full text-center">
+    <h1 class="text-2xl font-bold mb-6 text-green-600">School Fee Payment</h1>
+
+    <form method="POST" action="{% url 'initialize_payment' %}" class="space-y-4">
+      {% csrf_token %}
+
+      <div class="text-left">
+        <label for="email" class="block font-semibold mb-1">Email Address</label>
+        <input type="email" id="email" name="email" required
+          class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-green-500 focus:border-green-500 outline-none">
+      </div>
+
+      <div class="text-left">
+        <label for="amount" class="block font-semibold mb-1">Amount (₦)</label>
+        <input type="number" id="amount" name="amount" required
+          class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-green-500 focus:border-green-500 outline-none">
+      </div>
+
+      <button type="submit"
+        class="w-full bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition">
+        Proceed to Paystack
+      </button>
+    </form>
+  </div>
+
+</body>
+</html>
