@@ -38,54 +38,52 @@ def pay_fees(request):
 # ===========================================
 # INITIALIZE PAYMENT
 # ===========================================
+
 @csrf_exempt
 def initialize_payment(request):
     if request.method == "POST":
         email = request.POST.get("email")
         amount = request.POST.get("amount")
 
-        # Validate form inputs
         if not email or not amount:
             return render(request, "error.html", {"message": "Email and amount are required"})
 
         try:
             amount_in_kobo = int(float(amount) * 100)
         except ValueError:
-            return render(request, "error.html", {"message": "Invalid amount entered"})
+            return render(request, "error.html", {"message": "Invalid amount"})
 
-        # Create a unique reference
-        reference = str(uuid.uuid4()).replace("-", "")[:12]
-
-        # Save payment details to database (pending status)
-        Payment.objects.create(
-            parent_email=email,
-            amount=amount,
-            payment_reference=reference,
-            status='Pending'
-        )
-
-        # Prepare Paystack API call
+        # ✅ Prepare headers and payload for Paystack
         headers = {"Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}"}
         data = {
             "email": email,
             "amount": amount_in_kobo,
-            "reference": reference,
             "callback_url": "https://school-payment-portal.onrender.com/payments/verify/",
         }
 
-        response = requests.post(f"{settings.PAYSTACK_BASE_URL}/transaction/initialize", headers=headers, data=data)
+        # ✅ Send POST request to Paystack API
+        response = requests.post(
+            f"{settings.PAYSTACK_BASE_URL}/transaction/initialize",
+            headers=headers,
+            data=data
+        )
+
+        # ✅ Parse JSON response
         result = response.json()
 
-        print("🔍 Paystack init response:", result)  # Helpful for debugging in Render logs
+        # 🧠 Debugging: print the response in Render logs
+        print("🔍 Paystack init response:", result)
 
+        # ✅ Check for success and redirect user to Paystack checkout
         if result.get("status") and result.get("data"):
             return redirect(result["data"]["authorization_url"])
         else:
+            # ❌ Show detailed error message
             error_message = result.get("message", "Error initializing payment")
             return render(request, "error.html", {"message": f"Paystack Error: {error_message}"})
 
-    return redirect("pay_fees")
-
+    # ✅ If user visits the page directly
+    return render(request, "payments/payment_form.html")
 
 # ===========================================
 # VERIFY PAYMENT
@@ -151,4 +149,5 @@ def download_receipt(request, reference):
 # ===========================================
 def about(request):
     return render(request, 'about.html')
+
 
