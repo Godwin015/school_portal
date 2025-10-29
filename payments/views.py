@@ -67,6 +67,8 @@ def initialize_payment(request):
             headers=headers,
             data=data
         )
+        print("🔍 Paystack init response:", response.text)
+
 
         # ✅ Parse JSON response
         result = response.json()
@@ -149,5 +151,6 @@ def download_receipt(request, reference):
 # ===========================================
 def about(request):
     return render(request, 'about.html')
+
 
 
