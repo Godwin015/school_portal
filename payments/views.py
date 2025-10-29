@@ -37,49 +37,40 @@ from .models import Payment
 
 @csrf_exempt
 def initialize_payment(request):
-    if request.method == 'POST':
-        student_name = request.POST.get('student_name')
-        session = request.POST.get('session')
-        student_class = request.POST.get('student_class')
-        term = request.POST.get('term')
-        parent_email = request.POST.get('parent_email')
-        amount = request.POST.get('amount')
+    if request.method == "POST":
+        email = request.POST.get("email")
+        amount = request.POST.get("amount")
 
-        reference = str(uuid.uuid4())
-        headers = {
-            "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
-            "Content-Type": "application/json"
-        }
+        if not email or not amount:
+            return render(request, "error.html", {"message": "Email and amount are required"})
+
+        try:
+            amount_in_kobo = int(float(amount) * 100)
+        except ValueError:
+            return render(request, "error.html", {"message": "Invalid amount"})
+
+        headers = {"Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}"}
         data = {
-            "email": parent_email,
-            "amount": int(float(amount) * 100),  # Convert Naira to Kobo
-            "reference": reference,
-            "callback_url": "https://school-payment-portal.onrender.com/payments/verify/"
+            "email": email,
+            "amount": amount_in_kobo,
+            "callback_url": "https://school-payment-portal.onrender.com/payments/verify/",
         }
 
-        res = requests.post("https://api.paystack.co/transaction/initialize", json=data, headers=headers)
-        response_data = res.json()
+        response = requests.post(f"{settings.PAYSTACK_BASE_URL}/transaction/initialize", headers=headers, data=data)
+        result = response.json()
 
-        if response_data.get('status'):
-            # Save payment details to DB
-            Payment.objects.create(
-                student_name=student_name,
-                session=session,
-                student_class=student_class,
-                term=term,
-                parent_email=parent_email,
-                amount=amount,
-                payment_reference=reference,
-                status='Pending'
-            )
-            # Redirect to Paystack payment page
-            return redirect(response_data['data']['authorization_url'])
+        # Debugging logs to catch Paystack errors
+        print("Paystack init response:", result)
+
+        if result.get("status") and result.get("data"):
+            return redirect(result["data"]["authorization_url"])
         else:
-            error_message = response_data.get('message', 'Payment initialization failed.')
-            return render(request, 'payments/payment_failed.html', {'error': error_message})
+            # Log and show the Paystack API message
+            error_message = result.get("message", "Error initializing payment")
+            return render(request, "error.html", {"message": f"Paystack Error: {error_message}"})
 
-    return redirect('pay_fees')
-
+    return render(request, "pay.html")
+    
 def verify_payment(request):
     reference = request.GET.get('reference')
     headers = {"Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}"}
@@ -140,5 +131,6 @@ def download_receipt(request, reference):
 
 def about(request):
     return render(request, 'about.html')
+
 
 
