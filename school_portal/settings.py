@@ -101,13 +101,14 @@ TEMPLATES = [
 # ===========================
 # PAYSTACK CONFIGURATION
 # ===========================
-PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY', 'pk_test_e238acf87d032d084feade6bd1bfed2be6fb6284')
-PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY', 'sk_test_ac9cd30af651e0caa75800ded16874490cd0a583')
+PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY')
+PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY')
 PAYSTACK_BASE_URL = 'https://api.paystack.co'
 
 # ===========================
 # DEFAULT AUTO FIELD
 # ===========================
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 
 
