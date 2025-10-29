@@ -28,6 +28,14 @@ def pay_fees(request):
 
     return render(request, 'payments/payment_form.html')
 
+import requests
+import uuid
+from django.conf import settings
+from django.shortcuts import render, redirect
+from django.views.decorators.csrf import csrf_exempt
+from .models import Payment
+
+@csrf_exempt
 def initialize_payment(request):
     if request.method == 'POST':
         student_name = request.POST.get('student_name')
@@ -38,19 +46,22 @@ def initialize_payment(request):
         amount = request.POST.get('amount')
 
         reference = str(uuid.uuid4())
-        headers = {"Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}"}
+        headers = {
+            "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
+            "Content-Type": "application/json"
+        }
         data = {
             "email": parent_email,
-            "amount": int(float(amount) * 100),  # convert Naira to Kobo
+            "amount": int(float(amount) * 100),  # Convert Naira to Kobo
             "reference": reference,
-            "callback_url": "http://127.0.0.1:8000/payments/verify/"  # update in production
+            "callback_url": "https://school-payment-portal.onrender.com/payments/verify/"
         }
 
-        res = requests.post("https://api.paystack.co/transaction/initialize", headers=headers, data=data)
+        res = requests.post("https://api.paystack.co/transaction/initialize", json=data, headers=headers)
         response_data = res.json()
 
         if response_data.get('status'):
-            # Save payment to database
+            # Save payment details to DB
             Payment.objects.create(
                 student_name=student_name,
                 session=session,
@@ -61,10 +72,11 @@ def initialize_payment(request):
                 payment_reference=reference,
                 status='Pending'
             )
-            # Redirect to Paystack checkout
+            # Redirect to Paystack payment page
             return redirect(response_data['data']['authorization_url'])
         else:
-            return render(request, 'payments/payment_failed.html', {'error': 'Payment initialization failed'})
+            error_message = response_data.get('message', 'Payment initialization failed.')
+            return render(request, 'payments/payment_failed.html', {'error': error_message})
 
     return redirect('pay_fees')
 
@@ -128,4 +140,5 @@ def download_receipt(request, reference):
 
 def about(request):
     return render(request, 'about.html')
+
 
