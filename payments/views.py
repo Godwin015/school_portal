@@ -61,17 +61,28 @@ def initialize_payment(request):
             "callback_url": "https://school-payment-portal.onrender.com/payments/verify/",
         }
 
-        # ✅ Send POST request to Paystack API
-        response = requests.post(
-            f"{settings.PAYSTACK_BASE_URL}/transaction/initialize",
-            headers=headers,
-            data=data
-        )
-        print("🔍 Paystack init response:", response.text)
+                # 🚀 Send request to Paystack
+        try:
+            response = requests.post(
+                f"{settings.PAYSTACK_BASE_URL}/transaction/initialize",
+                headers=headers,
+                data=data,
+                timeout=10  # helps catch slow network issues
+            )
 
+            # 🪵 Log raw Paystack response
+            print("🔍 Paystack init response:", response.text)
 
-        # ✅ Parse JSON response
-        result = response.json()
+            result = response.json()
+
+        except Exception as e:
+            # 🔥 Catch network or decoding issues
+            print("⚠️ Paystack request failed:", str(e))
+            return render(
+                request,
+                "error.html",
+                {"message": f"Connection to Paystack failed: {e}"}
+            )
 
         # 🧠 Debugging: print the response in Render logs
         print("🔍 Paystack init response:", result)
@@ -151,6 +162,7 @@ def download_receipt(request, reference):
 # ===========================================
 def about(request):
     return render(request, 'about.html')
+
 
 
 
