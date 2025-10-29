@@ -1,12 +1,17 @@
 from django.shortcuts import render, redirect
 from django.conf import settings
-from .utils import generate_receipt_pdf
-from django.http import JsonResponse
+from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.core.mail import send_mail
 from .models import Payment
+from .utils import generate_receipt_pdf
 import requests
 import uuid
 
+
+# ===========================================
+# PAY FORM VIEW
+# ===========================================
 def pay_fees(request):
     if request.method == 'POST':
         student_name = request.POST.get('student_name')
@@ -26,51 +31,65 @@ def pay_fees(request):
         }
         return render(request, 'payments/payment_confirm.html', context)
 
-    return render(request, 'payments/payment_form.html')
+    # Show the payment form
+    return render(request, 'payments/pay.html')
 
-import requests
-import uuid
-from django.conf import settings
-from django.shortcuts import render, redirect
-from django.views.decorators.csrf import csrf_exempt
-from .models import Payment
 
+# ===========================================
+# INITIALIZE PAYMENT
+# ===========================================
 @csrf_exempt
 def initialize_payment(request):
     if request.method == "POST":
         email = request.POST.get("email")
         amount = request.POST.get("amount")
 
+        # Validate form inputs
         if not email or not amount:
             return render(request, "error.html", {"message": "Email and amount are required"})
 
         try:
             amount_in_kobo = int(float(amount) * 100)
         except ValueError:
-            return render(request, "error.html", {"message": "Invalid amount"})
+            return render(request, "error.html", {"message": "Invalid amount entered"})
 
+        # Create a unique reference
+        reference = str(uuid.uuid4()).replace("-", "")[:12]
+
+        # Save payment details to database (pending status)
+        Payment.objects.create(
+            parent_email=email,
+            amount=amount,
+            payment_reference=reference,
+            status='Pending'
+        )
+
+        # Prepare Paystack API call
         headers = {"Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}"}
         data = {
             "email": email,
             "amount": amount_in_kobo,
+            "reference": reference,
             "callback_url": "https://school-payment-portal.onrender.com/payments/verify/",
         }
 
         response = requests.post(f"{settings.PAYSTACK_BASE_URL}/transaction/initialize", headers=headers, data=data)
         result = response.json()
 
-        # Debugging logs to catch Paystack errors
-        print("Paystack init response:", result)
+        print("🔍 Paystack init response:", result)  # Helpful for debugging in Render logs
 
         if result.get("status") and result.get("data"):
             return redirect(result["data"]["authorization_url"])
         else:
-            # Log and show the Paystack API message
             error_message = result.get("message", "Error initializing payment")
             return render(request, "error.html", {"message": f"Paystack Error: {error_message}"})
 
-    return render(request, "pay.html")
-    
+    return redirect("pay_fees")
+
+
+# ===========================================
+# VERIFY PAYMENT
+# ===========================================
 def verify_payment(request):
     reference = request.GET.get('reference')
     headers = {"Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}"}
@@ -78,16 +97,12 @@ def verify_payment(request):
     res = requests.get(url, headers=headers)
     response_data = res.json()
 
-    if response_data['data']['status'] == 'success':
+    if response_data.get('data', {}).get('status') == 'success':
         payment = Payment.objects.get(payment_reference=reference)
         payment.status = 'Successful'
         payment.save()
 
-        # ===============================
-        # 📧 SEND EMAIL TO PARENT & SCHOOL
-        # ===============================
-        from django.core.mail import send_mail
-
+        # Send email confirmation
         subject = "Payment Confirmation - Sunshine Academy"
         message = (
             f"Dear Parent,\n\n"
@@ -102,14 +117,11 @@ def verify_payment(request):
         send_mail(
             subject,
             message,
-            settings.EMAIL_HOST_USER,  # from email (your school email)
+            settings.EMAIL_HOST_USER,
             [payment.parent_email, 'accounts@schoolname.com'],
             fail_silently=True,
         )
 
-        # ===============================
-        # RENDER SUCCESS PAGE
-        # ===============================
         context = {
             'student_name': payment.student_name,
             'session': payment.session,
@@ -123,14 +135,19 @@ def verify_payment(request):
     else:
         return render(request, 'payments/payment_failed.html')
 
+
+# ===========================================
+# DOWNLOAD RECEIPT
+# ===========================================
 def download_receipt(request, reference):
     pdf_buffer = generate_receipt_pdf(reference)
     response = HttpResponse(pdf_buffer, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="Receipt_{reference}.pdf"'
     return response
 
+
+# ===========================================
+# ABOUT PAGE
+# ===========================================
 def about(request):
     return render(request, 'about.html')
-
-
-
