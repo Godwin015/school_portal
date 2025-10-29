@@ -1,3 +1,4 @@
+import sys
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.http import HttpResponse
@@ -7,7 +8,6 @@ from .models import Payment
 from .utils import generate_receipt_pdf
 import requests
 import uuid
-
 
 # ===========================================
 # PAY FORM VIEW
@@ -41,6 +41,9 @@ def pay_fees(request):
 
 @csrf_exempt
 def initialize_payment(request):
+    # 🟢 Force a visible log entry in Render even if DEBUG=False
+    print("📢 initialize_payment() triggered", file=sys.stderr)
+    
     if request.method == "POST":
         email = request.POST.get("email")
         amount = request.POST.get("amount")
@@ -164,6 +167,7 @@ def download_receipt(request, reference):
 # ===========================================
 def about(request):
     return render(request, 'about.html')
+
 
 
 
