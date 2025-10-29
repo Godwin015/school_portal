@@ -32,7 +32,7 @@ def pay_fees(request):
         return render(request, 'payments/payment_confirm.html', context)
 
     # Show the payment form
-    return render(request, 'payments/pay.html')
+    return render(request, 'payments/payment_form.html')
 
 
 # ===========================================
@@ -151,3 +151,4 @@ def download_receipt(request, reference):
 # ===========================================
 def about(request):
     return render(request, 'about.html')
+
