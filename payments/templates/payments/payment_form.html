@@ -9,8 +9,10 @@
             Please fill in the details below to pay your child’s school fees securely.
         </p>
 
-        <form method="POST" action="{% url 'pay_fees' %}" class="space-y-6">
+        <!-- ✅ Directly post to initialize_payment instead of pay_fees -->
+        <form method="POST" action="{% url 'initialize_payment' %}" class="space-y-6">
             {% csrf_token %}
+
             <!-- Student Name -->
             <div>
                 <label class="block text-gray-700 font-medium mb-2">Student Full Name</label>
@@ -59,10 +61,10 @@
                 </select>
             </div>
 
-            <!-- Parent Email -->
+            <!-- ✅ Parent Email (renamed to 'email') -->
             <div>
                 <label class="block text-gray-700 font-medium mb-2">Parent/Guardian Email</label>
-                <input type="email" name="parent_email" required
+                <input type="email" name="email" required
                        class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500">
             </div>
 
