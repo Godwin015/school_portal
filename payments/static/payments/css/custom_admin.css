@@ -1,0 +1,11 @@
+#header {
+    background-color: #047857 !important; /* Tailwind green-700 */
+}
+
+#header h1 a {
+    background: url("/static/img/admin_logo.png") no-repeat left center;
+    padding-left: 60px;
+    color: white !important;
+    font-weight: bold;
+    font-size: 20px;
+}
