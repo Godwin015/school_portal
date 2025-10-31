@@ -9,7 +9,7 @@
             Please fill in the details below to pay your child’s school fees securely.
         </p>
 
-        <!-- ✅ Directly post to initialize_payment instead of pay_fees -->
+        <!-- ✅ Form submits directly to Flutterwave initialization route -->
         <form method="POST" action="{% url 'initialize_payment' %}" class="space-y-6">
             {% csrf_token %}
 
@@ -40,6 +40,7 @@
                     <option value="">-- Select Class --</option>
                     <option value="Nursery 1">Nursery 1</option>
                     <option value="Nursery 2">Nursery 2</option>
+                    <option value="Nursery 2">Nursery 3</option>
                     <option value="Primary 1">Primary 1</option>
                     <option value="Primary 2">Primary 2</option>
                     <option value="Primary 3">Primary 3</option>
@@ -61,7 +62,7 @@
                 </select>
             </div>
 
-            <!-- ✅ Parent Email (renamed to 'email') -->
+            <!-- Parent Email -->
             <div>
                 <label class="block text-gray-700 font-medium mb-2">Parent/Guardian Email</label>
                 <input type="email" name="email" required
@@ -79,7 +80,7 @@
             <div class="text-center pt-6">
                 <button type="submit"
                         class="bg-green-700 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-green-600 transition">
-                    Proceed to Paystack
+                    Proceed to Make Payment
                 </button>
             </div>
         </form>
