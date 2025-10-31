@@ -39,14 +39,15 @@ def pay_fees(request):
 # ===========================================
 # INITIALIZE PAYMENT
 # ===========================================
-
 @csrf_exempt
 def initialize_payment(request):
+    import sys
     print("📢 initialize_payment() triggered", file=sys.stderr)
 
     if request.method == "POST":
         email = request.POST.get("email")
         amount = request.POST.get("amount")
+
         print(f"🧾 Received form data -> email: {email}, amount: {amount}", file=sys.stderr)
 
         if not email or not amount:
@@ -57,38 +58,37 @@ def initialize_payment(request):
             amount = float(amount)
         except ValueError:
             print("❌ Invalid amount format", file=sys.stderr)
-            return render(request, "error.html", {"message": "Invalid amount format"})
+            return render(request, "error.html", {"message": "Invalid amount"})
 
-        # ✅ Flutterwave API setup
+        # ✅ Prepare headers and payload for Flutterwave
         headers = {
             "Authorization": f"Bearer {settings.FLW_SECRET_KEY}",
             "Content-Type": "application/json",
         }
-
         data = {
-            "tx_ref": f"TX-{uuid.uuid4().hex[:10]}",
-            "amount": str(amount),
+            "tx_ref": f"TX-{email.replace('@', '_')}",
+            "amount": amount,
             "currency": "NGN",
             "redirect_url": "https://school-payment-portal.onrender.com/payments/verify/",
             "customer": {
                 "email": email,
-            },
-            "meta": {
-                "reason": "School Fee Payment",
+                "phonenumber": "",
+                "name": email.split('@')[0],
             },
             "customizations": {
-                "title": "Sunshine Academy Fee Payment",
-                "description": "Pay your school fees securely via Flutterwave",
+                "title": "Sunshine Academy Payment",
+                "description": "School fee payment for student",
+                "logo": "https://school-payment-portal.onrender.com/static/img/logo.png",
             },
         }
 
         try:
             print("🚀 Sending request to Flutterwave...", file=sys.stderr)
             response = requests.post(
-                f"{settings.FLW_BASE_URL}/payments",
+                "https://api.flutterwave.com/v3/payments",
                 headers=headers,
                 json=data,
-                timeout=10
+                timeout=10,
             )
 
             print("✅ Status Code:", response.status_code, file=sys.stderr)
@@ -98,90 +98,97 @@ def initialize_payment(request):
 
         except Exception as e:
             print("⚠️ Flutterwave request failed:", str(e), file=sys.stderr)
-            return render(request, "error.html", {"message": f"Connection to Flutterwave failed: {e}"})
+            return render(
+                request,
+                "error.html",
+                {"message": f"Connection to Flutterwave failed: {e}"},
+            )
 
-        # ✅ Redirect user to payment page if successful
+        # ✅ Check if initialization succeeded
         if result.get("status") == "success":
             payment_link = result["data"]["link"]
-            print("✅ Redirecting user to Flutterwave payment page", file=sys.stderr)
+            print("✅ Redirecting to Flutterwave payment page...", file=sys.stderr)
             return redirect(payment_link)
         else:
             error_message = result.get("message", "Error initializing payment")
             print("🚫 Flutterwave Error Message:", error_message, file=sys.stderr)
-            return render(request, "error.html", {"message": f"Flutterwave Error: {error_message}"})
+            return render(
+                request,
+                "error.html",
+                {"message": f"Flutterwave Error: {error_message}"},
+            )
 
     print("ℹ️ GET request received for initialize_payment", file=sys.stderr)
     return render(request, "payments/payment_form.html")
+
 
 # ===========================================
 # VERIFY PAYMENT
 # ===========================================
 def verify_payment(request):
-    tx_ref = request.GET.get("tx_ref")
+    import sys
+    print("📢 verify_payment() triggered", file=sys.stderr)
+
     transaction_id = request.GET.get("transaction_id")
-
-    print(f"🔎 Verifying payment -> tx_ref: {tx_ref}, transaction_id: {transaction_id}", file=sys.stderr)
-
     if not transaction_id:
-        return render(request, "error.html", {"message": "Transaction ID is missing."})
+        print("⚠️ Missing transaction_id", file=sys.stderr)
+        return render(request, "error.html", {"message": "Transaction ID missing"})
 
     headers = {
-        "Authorization": f"Bearer {settings.FLW_SECRET_KEY}"
+        "Authorization": f"Bearer {settings.FLW_SECRET_KEY}",
+        "Content-Type": "application/json",
     }
-
-    url = f"{settings.FLW_BASE_URL}/transactions/{transaction_id}/verify"
+    url = f"https://api.flutterwave.com/v3/transactions/{transaction_id}/verify"
 
     try:
-        response = requests.get(url, headers=headers)
-        result = response.json()
-        print("🔍 Flutterwave verify response:", result, file=sys.stderr)
-
-        if result.get("status") == "success" and result["data"]["status"] == "successful":
-            payment = Payment.objects.filter(payment_reference=tx_ref).first()
-            if payment:
-                payment.status = "Successful"
-                payment.save()
-
-                # Send confirmation email
-                subject = "Payment Confirmation - Sunshine Academy"
-                message = (
-                    f"Dear Parent,\n\n"
-                    f"Your payment for {payment.student_name} "
-                    f"({payment.term}, {payment.session}) was successful.\n\n"
-                    f"Amount: ₦{payment.amount:,.2f}\n"
-                    f"Reference: {payment.payment_reference}\n\n"
-                    f"Thank you for choosing Sunshine Academy.\n\n"
-                    f"Best regards,\nSunshine Academy Accounts Office"
-                )
-
-                send_mail(
-                    subject,
-                    message,
-                    settings.EMAIL_HOST_USER,
-                    [payment.parent_email, 'accounts@schoolname.com'],
-                    fail_silently=True,
-                )
-
-                context = {
-                    'student_name': payment.student_name,
-                    'session': payment.session,
-                    'student_class': payment.student_class,
-                    'term': payment.term,
-                    'parent_email': payment.parent_email,
-                    'amount': payment.amount,
-                    'reference': payment.payment_reference,
-                }
-                return render(request, 'payments/payment_success.html', context)
-            else:
-                print("⚠️ Payment record not found for tx_ref:", tx_ref, file=sys.stderr)
-        else:
-            print("❌ Flutterwave verification failed:", result, file=sys.stderr)
-
+        print("🔎 Verifying payment with Flutterwave...", file=sys.stderr)
+        res = requests.get(url, headers=headers, timeout=10)
+        response_data = res.json()
+        print("✅ Flutterwave verify response:", response_data, file=sys.stderr)
     except Exception as e:
-        print("⚠️ Verification request failed:", str(e), file=sys.stderr)
+        print("⚠️ Flutterwave verification failed:", str(e), file=sys.stderr)
         return render(request, "error.html", {"message": f"Verification failed: {e}"})
 
-    return render(request, "payments/payment_failed.html")
+    data = response_data.get("data", {})
+    if data.get("status") == "successful":
+        reference = data.get("tx_ref")
+        amount = data.get("amount")
+        email = data.get("customer", {}).get("email")
+
+        # ✅ Save payment to DB
+        payment, created = Payment.objects.get_or_create(payment_reference=reference)
+        payment.status = "Successful"
+        payment.amount = amount
+        payment.parent_email = email
+        payment.save()
+
+        # ✅ Send confirmation email
+        subject = "Payment Confirmation - Sunshine Academy"
+        message = (
+            f"Dear Parent,\n\n"
+            f"Your payment of ₦{amount:,.2f} was successful.\n\n"
+            f"Reference: {reference}\n\n"
+            f"Thank you for choosing Sunshine Academy.\n\n"
+            f"Best regards,\nSunshine Academy Accounts Office"
+        )
+        send_mail(
+            subject,
+            message,
+            settings.EMAIL_HOST_USER,
+            [email],
+            fail_silently=True,
+        )
+
+        # ✅ Render success page
+        context = {
+            "reference": reference,
+            "amount": amount,
+            "email": email,
+        }
+        return render(request, "payments/payment_success.html", context)
+    else:
+        print("❌ Payment verification failed:", response_data, file=sys.stderr)
+        return render(request, "payments/payment_failed.html")
 
 
 # ===========================================
@@ -199,3 +206,4 @@ def download_receipt(request, reference):
 # ===========================================
 def about(request):
     return render(request, 'about.html')
+
