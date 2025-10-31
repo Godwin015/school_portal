@@ -1,5 +1,7 @@
 import sys
 import json
+import requests
+import uuid
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.http import HttpResponse
@@ -7,33 +9,46 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.mail import send_mail
 from .models import Payment
 from .utils import generate_receipt_pdf
-import requests
-import uuid
+
 
 # ===========================================
 # PAY FORM VIEW
 # ===========================================
 def pay_fees(request):
-    if request.method == 'POST':
-        student_name = request.POST.get('student_name')
-        session = request.POST.get('session')
-        student_class = request.POST.get('student_class')
-        term = request.POST.get('term')
-        parent_email = request.POST.get('parent_email')
-        amount = request.POST.get('amount')
+    """Display payment form."""
+    return render(request, "payments/payment_form.html")
+
+
+# ===========================================
+# PAYMENT CONFIRMATION VIEW
+# ===========================================
+@csrf_exempt
+def payment_confirm(request):
+    """Display payment confirmation page before redirecting to Flutterwave."""
+    if request.method == "POST":
+        student_name = request.POST.get("student_name")
+        session = request.POST.get("session")
+        student_class = request.POST.get("student_class")
+        term = request.POST.get("term")
+        email = request.POST.get("email")
+        amount = request.POST.get("amount")
 
         context = {
-            'student_name': student_name,
-            'session': session,
-            'student_class': student_class,
-            'term': term,
-            'parent_email': parent_email,
-            'amount': amount,
+            "student_name": student_name,
+            "session": session,
+            "student_class": student_class,
+            "term": term,
+            "email": email,
+            "amount": amount,
         }
-        return render(request, 'payments/payment_confirm.html', context)
 
-    # Show the payment form
-    return render(request, 'payments/payment_form.html')
+        # ✅ Save in session (for continuity if needed)
+        request.session["payment_data"] = context
+
+        return render(request, "payments/payment_confirm.html", context)
+
+    # Redirect if accessed without form submission
+    return redirect("pay_fees")
 
 
 # ===========================================
@@ -41,92 +56,87 @@ def pay_fees(request):
 # ===========================================
 @csrf_exempt
 def initialize_payment(request):
-    import sys
     print("📢 initialize_payment() triggered", file=sys.stderr)
 
-    if request.method == "POST":
-        email = request.POST.get("email")
-        amount = request.POST.get("amount")
+    # Retrieve data either from POST or session
+    email = request.POST.get("email") or request.session.get("payment_data", {}).get("email")
+    amount = request.POST.get("amount") or request.session.get("payment_data", {}).get("amount")
 
-        print(f"🧾 Received form data -> email: {email}, amount: {amount}", file=sys.stderr)
+    print(f"🧾 Received data -> email: {email}, amount: {amount}", file=sys.stderr)
 
-        if not email or not amount:
-            print("⚠️ Missing email or amount", file=sys.stderr)
-            return render(request, "error.html", {"message": "Email and amount are required"})
+    if not email or not amount:
+        print("⚠️ Missing email or amount", file=sys.stderr)
+        return render(request, "error.html", {"message": "Email and amount are required"})
 
-        try:
-            amount = float(amount)
-        except ValueError:
-            print("❌ Invalid amount format", file=sys.stderr)
-            return render(request, "error.html", {"message": "Invalid amount"})
+    try:
+        amount = float(amount)
+    except ValueError:
+        print("❌ Invalid amount format", file=sys.stderr)
+        return render(request, "error.html", {"message": "Invalid amount"})
 
-        # ✅ Prepare headers and payload for Flutterwave
-        headers = {
-            "Authorization": f"Bearer {settings.FLW_SECRET_KEY}",
-            "Content-Type": "application/json",
-        }
-        data = {
-            "tx_ref": f"TX-{email.replace('@', '_')}",
-            "amount": amount,
-            "currency": "NGN",
-            "redirect_url": "https://school-payment-portal.onrender.com/payments/verify/",
-            "customer": {
-                "email": email,
-                "phonenumber": "",
-                "name": email.split('@')[0],
-            },
-            "customizations": {
-                "title": "Sunshine Academy Payment",
-                "description": "School fee payment for student",
-                "logo": "https://school-payment-portal.onrender.com/static/img/logo.png",
-            },
-        }
+    # ✅ Prepare Flutterwave request
+    headers = {
+        "Authorization": f"Bearer {settings.FLW_SECRET_KEY}",
+        "Content-Type": "application/json",
+    }
+    data = {
+        "tx_ref": f"TX-{email.replace('@', '_')}",
+        "amount": amount,
+        "currency": "NGN",
+        "redirect_url": "https://school-payment-portal.onrender.com/payments/verify/",
+        "customer": {
+            "email": email,
+            "phonenumber": "",
+            "name": email.split("@")[0],
+        },
+        "customizations": {
+            "title": "Sunshine Academy Payment",
+            "description": "School fee payment for student",
+            "logo": "https://school-payment-portal.onrender.com/static/img/logo.png",
+        },
+    }
 
-        try:
-            print("🚀 Sending request to Flutterwave...", file=sys.stderr)
-            response = requests.post(
-                "https://api.flutterwave.com/v3/payments",
-                headers=headers,
-                json=data,
-                timeout=10,
-            )
+    try:
+        print("🚀 Sending request to Flutterwave...", file=sys.stderr)
+        response = requests.post(
+            "https://api.flutterwave.com/v3/payments",
+            headers=headers,
+            json=data,
+            timeout=10,
+        )
 
-            print("✅ Status Code:", response.status_code, file=sys.stderr)
-            print("🔍 Flutterwave init response:", response.text, file=sys.stderr)
+        print("✅ Status Code:", response.status_code, file=sys.stderr)
+        print("🔍 Flutterwave init response:", response.text, file=sys.stderr)
 
-            result = response.json()
+        result = response.json()
 
-        except Exception as e:
-            print("⚠️ Flutterwave request failed:", str(e), file=sys.stderr)
-            return render(
-                request,
-                "error.html",
-                {"message": f"Connection to Flutterwave failed: {e}"},
-            )
+    except Exception as e:
+        print("⚠️ Flutterwave request failed:", str(e), file=sys.stderr)
+        return render(
+            request,
+            "error.html",
+            {"message": f"Connection to Flutterwave failed: {e}"},
+        )
 
-        # ✅ Check if initialization succeeded
-        if result.get("status") == "success":
-            payment_link = result["data"]["link"]
-            print("✅ Redirecting to Flutterwave payment page...", file=sys.stderr)
-            return redirect(payment_link)
-        else:
-            error_message = result.get("message", "Error initializing payment")
-            print("🚫 Flutterwave Error Message:", error_message, file=sys.stderr)
-            return render(
-                request,
-                "error.html",
-                {"message": f"Flutterwave Error: {error_message}"},
-            )
-
-    print("ℹ️ GET request received for initialize_payment", file=sys.stderr)
-    return render(request, "payments/payment_form.html")
+    # ✅ Redirect to Flutterwave page if successful
+    if result.get("status") == "success":
+        payment_link = result["data"]["link"]
+        print("✅ Redirecting to Flutterwave payment page...", file=sys.stderr)
+        return redirect(payment_link)
+    else:
+        error_message = result.get("message", "Error initializing payment")
+        print("🚫 Flutterwave Error Message:", error_message, file=sys.stderr)
+        return render(
+            request,
+            "error.html",
+            {"message": f"Flutterwave Error: {error_message}"},
+        )
 
 
 # ===========================================
 # VERIFY PAYMENT
 # ===========================================
 def verify_payment(request):
-    import sys
     print("📢 verify_payment() triggered", file=sys.stderr)
 
     transaction_id = request.GET.get("transaction_id")
@@ -155,7 +165,7 @@ def verify_payment(request):
         amount = data.get("amount")
         email = data.get("customer", {}).get("email")
 
-        # ✅ Save payment to DB
+        # ✅ Save payment record
         payment, created = Payment.objects.get_or_create(payment_reference=reference)
         payment.status = "Successful"
         payment.amount = amount
@@ -196,8 +206,8 @@ def verify_payment(request):
 # ===========================================
 def download_receipt(request, reference):
     pdf_buffer = generate_receipt_pdf(reference)
-    response = HttpResponse(pdf_buffer, content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="Receipt_{reference}.pdf"'
+    response = HttpResponse(pdf_buffer, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="Receipt_{reference}.pdf"'
     return response
 
 
@@ -205,5 +215,4 @@ def download_receipt(request, reference):
 # ABOUT PAGE
 # ===========================================
 def about(request):
-    return render(request, 'about.html')
-
+    return render(request, "about.html")
