@@ -67,9 +67,9 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 # ===========================
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.getenv('DATABASE_URL', f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
         conn_max_age=600,
-        ssl_require=True
+        ssl_require=os.getenv('RENDER', False)  # Only require SSL when needed
     )
 }
 
@@ -118,3 +118,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ===========================
 LOGIN_REDIRECT_URL = '/admin/'
 LOGOUT_REDIRECT_URL = '/'
+
