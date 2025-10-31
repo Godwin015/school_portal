@@ -97,18 +97,17 @@ TEMPLATES = [
         },
     },
 ]
+# Flutterwave API configuration
+FLW_PUBLIC_KEY = os.getenv("FLW_PUBLIC_KEY")
+FLW_SECRET_KEY = os.getenv("FLW_SECRET_KEY")
+FLW_BASE_URL = os.getenv("FLW_BASE_URL", "https://api.flutterwave.com/v3")
 
-# ===========================
-# PAYSTACK CONFIGURATION
-# ===========================
-PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY')
-PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY')
-PAYSTACK_BASE_URL = 'https://api.paystack.co'
 
 # ===========================
 # DEFAULT AUTO FIELD
 # ===========================
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 
 
 
