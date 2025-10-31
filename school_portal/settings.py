@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+from django.apps import AppConfig
 import os
 from pathlib import Path
 
@@ -107,6 +108,10 @@ FLW_BASE_URL = os.getenv("FLW_BASE_URL", "https://api.flutterwave.com/v3")
 # DEFAULT AUTO FIELD
 # ===========================
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGIN_REDIRECT_URL = '/admin/'
+LOGOUT_REDIRECT_URL = '/'
+
 
 
 
