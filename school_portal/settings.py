@@ -13,11 +13,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ===========================
 # SECURITY & DEBUG SETTINGS
 # ===========================
-SECRET_KEY = os.getenv('SECRET_KEY', 'sk_live_27cba69033dad02cddfe327b9c27aa1063fbd8b9')
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-temp-secret-key')
 DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
-# Set your Render domain later for security
-ALLOWED_HOSTS = ['*']
+# Restrict hosts in production
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
 
 # ===========================
 # INSTALLED APPS
@@ -29,7 +29,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'payments',  # your custom app
+    'payments',
 ]
 
 # ===========================
@@ -63,24 +63,32 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'your_app_password')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # ===========================
-# DATABASE CONFIGURATION (PostgreSQL for Render)
+# DATABASE CONFIGURATION
 # ===========================
-DATABASES = {
-    'default': dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        conn_max_age=600,
-        ssl_require=os.getenv('RENDER', False)  # Only require SSL when needed
-    )
-}
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=True  # ✅ Required for secure PostgreSQL connections on Render
+        )
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # ===========================
 # STATIC FILES CONFIGURATION
 # ===========================
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
+STATICFILES_DIRS = [BASE_DIR / 'static']
 
 # ===========================
 # TEMPLATES CONFIGURATION
@@ -118,4 +126,3 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ===========================
 LOGIN_REDIRECT_URL = '/admin/'
 LOGOUT_REDIRECT_URL = '/'
-
