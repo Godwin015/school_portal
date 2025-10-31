@@ -37,7 +37,7 @@
 
                 <div class="flex justify-between py-2">
                     <span class="font-medium text-gray-700">Parent Email:</span>
-                    <span class="text-gray-900">{{ email }}</span>
+                    <span class="text-gray-900">{{ parent_email }}</span>
                 </div>
 
                 <div class="flex justify-between py-2">
@@ -54,7 +54,7 @@
             <input type="hidden" name="session" value="{{ session }}">
             <input type="hidden" name="student_class" value="{{ student_class }}">
             <input type="hidden" name="term" value="{{ term }}">
-            <input type="hidden" name="email" value="{{ email }}">
+            <input type="hidden" name="parent_email" value="{{ parent_email }}">
             <input type="hidden" name="amount" value="{{ amount }}">
 
             <!-- Action Buttons -->
@@ -85,3 +85,4 @@
     </div>
 </section>
 {% endblock %}
+
