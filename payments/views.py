@@ -107,9 +107,12 @@ def initialize_payment(request):
 # VERIFY PAYMENT
 # ===========================================
 def verify_payment(request):
+    import sys
     print("📢 verify_payment() triggered", file=sys.stderr)
+
     transaction_id = request.GET.get("transaction_id")
     if not transaction_id:
+        print("⚠️ Missing transaction_id", file=sys.stderr)
         return render(request, "error.html", {"message": "Transaction ID missing"})
 
     headers = {
@@ -119,10 +122,12 @@ def verify_payment(request):
     url = f"https://api.flutterwave.com/v3/transactions/{transaction_id}/verify"
 
     try:
+        print("🔎 Verifying payment with Flutterwave...", file=sys.stderr)
         res = requests.get(url, headers=headers, timeout=10)
         response_data = res.json()
         print("✅ Flutterwave verify response:", response_data, file=sys.stderr)
     except Exception as e:
+        print("⚠️ Flutterwave verification failed:", str(e), file=sys.stderr)
         return render(request, "error.html", {"message": f"Verification failed: {e}"})
 
     data = response_data.get("data", {})
@@ -131,25 +136,56 @@ def verify_payment(request):
         amount = data.get("amount")
         email = data.get("customer", {}).get("email")
 
-        payment, _ = Payment.objects.get_or_create(payment_reference=reference)
-        payment.amount = amount
-        payment.parent_email = email
-        payment.save()
+        # ✅ Get other fields from session if available
+        session_data = request.session.get("payment_data", {})
+        student_name = session_data.get("student_name", "")
+        session_val = session_data.get("session", "")
+        student_class = session_data.get("student_class", "")
+        term = session_data.get("term", "")
 
-        # ✅ Email confirmation
+        # ✅ Save or update payment
+        payment, created = Payment.objects.update_or_create(
+            payment_reference=reference,
+            defaults={
+                "student_name": student_name,
+                "session": session_val,
+                "term": term,
+                "parent_email": email,
+                "amount": amount,
+            },
+        )
+
+        # ✅ Send confirmation email
+        subject = "Payment Confirmation - Sunshine Academy"
+        message = (
+            f"Dear Parent,\n\n"
+            f"Your payment of ₦{amount:,.2f} was successful.\n\n"
+            f"Reference: {reference}\n\n"
+            f"Thank you for choosing Sunshine Academy.\n\n"
+            f"Best regards,\nSunshine Academy Accounts Office"
+        )
         send_mail(
-            "Payment Confirmation - Sunshine Academy",
-            f"Dear Parent,\n\nYour payment of ₦{amount:,.2f} was successful.\nReference: {reference}\n\nThank you for choosing Sunshine Academy.",
+            subject,
+            message,
             settings.EMAIL_HOST_USER,
             [email],
             fail_silently=True,
         )
 
-        context = {"reference": reference, "amount": amount, "email": email}
+        # ✅ Render success page
+        context = {
+            "reference": reference,
+            "amount": amount,
+            "email": email,
+            "student_name": student_name,
+            "session": session_val,
+            "student_class": student_class,
+            "term": term,
+        }
         return render(request, "payments/payment_success.html", context)
-
-    return render(request, "payments/payment_failed.html")
-
+    else:
+        print("❌ Payment verification failed:", response_data, file=sys.stderr)
+        return render(request, "payments/payment_failed.html")
 
 # ===========================================
 # DOWNLOAD RECEIPT
@@ -166,3 +202,4 @@ def download_receipt(request, reference):
 # ===========================================
 def about(request):
     return render(request, "about.html")
+
