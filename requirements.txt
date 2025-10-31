@@ -5,3 +5,5 @@ reportlab
 python-dotenv
 qrcode
 dj-database-url
+psycopg[binary]
+psycopg2-binary
