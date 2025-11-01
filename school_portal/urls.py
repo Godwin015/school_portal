@@ -4,10 +4,18 @@ from django.views.generic import TemplateView
 from . import views
 
 urlpatterns = [
+    # ✅ Add Jet Dashboard before the admin path
+    path('jet/', include('jet.urls', 'jet')),  
+
+    # ✅ Django Admin (now powered by Jet)
     path('admin/', admin.site.urls),
-    path('', views.home, name='home'),  # ✅ Use your own home view
-    path('payments/', include('payments.urls')),  # ✅ Keep this
-    path('about/', views.about, name='about'),  # ✅ Works fine now
+
+    # ✅ Your main app routes
+    path('', views.home, name='home'),
+    path('payments/', include('payments.urls')),
+    path('about/', views.about, name='about'),
     path('contact/', views.contact, name='contact'),
 ]
+
+
 
