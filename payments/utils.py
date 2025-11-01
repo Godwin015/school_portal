@@ -6,6 +6,7 @@ from .models import Payment
 import qrcode
 from reportlab.lib.utils import ImageReader
 
+
 def generate_receipt_pdf(reference):
     payment = Payment.objects.get(payment_reference=reference)
 
@@ -13,14 +14,14 @@ def generate_receipt_pdf(reference):
     p = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
 
-    # Header
+    # === HEADER ===
     p.setFont("Helvetica-Bold", 20)
     p.drawCentredString(width / 2, height - 80, "Sunshine Academy")
 
     p.setFont("Helvetica", 12)
     p.drawCentredString(width / 2, height - 100, "Official Payment Receipt")
 
-    # Payment details
+    # === PAYMENT DETAILS ===
     y = height - 160
     details = [
         ("Student Name:", payment.student_name),
@@ -35,19 +36,30 @@ def generate_receipt_pdf(reference):
     ]
 
     for label, value in details:
+        p.setFont("Helvetica-Bold", 11)
         p.drawString(80, y, f"{label}")
+        p.setFont("Helvetica", 11)
         p.drawString(220, y, str(value))
         y -= 25
 
-    # QR Code (optional)
-    qr = qrcode.make(f"Reference: {payment.payment_reference}")
-    qr_image = ImageReader(qr)
-    p.drawImage(qr_image, width - 200, height - 250, 100, 100)
+    # === QR CODE ===
+    qr_data = f"Payment Reference: {payment.payment_reference}\nStatus: {payment.status}\nAmount: ₦{payment.amount:,.2f}"
+    qr_image = qrcode.make(qr_data)
 
-    # Footer
+    # ✅ Convert QR image to bytes for ReportLab
+    qr_buffer = BytesIO()
+    qr_image.save(qr_buffer, format='PNG')
+    qr_buffer.seek(0)
+    qr_reader = ImageReader(qr_buffer)
+
+    # Draw QR code on PDF
+    p.drawImage(qr_reader, width - 200, height - 250, 100, 100)
+
+    # === FOOTER ===
     p.setFont("Helvetica-Oblique", 10)
     p.drawCentredString(width / 2, 80, "This is a system-generated receipt. No signature required.")
 
+    # Finalize PDF
     p.showPage()
     p.save()
 
