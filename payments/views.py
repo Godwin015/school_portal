@@ -21,11 +21,9 @@ def pay_fees(request):
         parent_email = request.POST.get('parent_email')
         amount = request.POST.get('amount')
 
-        # Validate all fields
         if not all([student_name, session, student_class, term, parent_email, amount]):
             return render(request, 'error.html', {'message': 'All fields are required.'})
 
-        # Save form data to session
         context = {
             'student_name': student_name,
             'session': session,
@@ -49,35 +47,34 @@ def initialize_payment(request):
     print("📢 initialize_payment() triggered", file=sys.stderr)
 
     data = request.session.get('payment_data', {})
-    email = request.POST.get('parent_email') or data.get('parent_email')
-    amount = request.POST.get('amount') or data.get('amount')
-
-    print(f"🧾 Received data -> email: {email}, amount: {amount}", file=sys.stderr)
+    email = data.get('parent_email')
+    amount = data.get('amount')
 
     if not email or not amount:
-        return render(request, "error.html", {"message": "Email and amount are required"})
+        return render(request, "error.html", {"message": "Missing required fields"})
 
     try:
         amount = float(amount)
     except ValueError:
         return render(request, "error.html", {"message": "Invalid amount format"})
 
-    # ✅ Create transaction reference
+    # Generate unique reference
     tx_ref = f"TX-{email.replace('@', '_')}"
 
-    # ✅ Save payment record before redirecting
-    Payment.objects.create(
-        student_name=data.get("student_name"),
-        student_class=data.get("student_class"),
-        session=data.get("session"),
-        term=data.get("term"),
-        parent_email=email,
-        amount=amount,
+    # ✅ Save payment with pending status
+    Payment.objects.update_or_create(
         payment_reference=tx_ref,
-        status="pending"
+        defaults={
+            "student_name": data.get("student_name"),
+            "student_class": data.get("student_class"),
+            "session": data.get("session"),
+            "term": data.get("term"),
+            "parent_email": email,
+            "amount": amount,
+            "status": "pending",
+        },
     )
 
-    # ✅ Prepare Flutterwave request
     headers = {
         "Authorization": f"Bearer {settings.FLW_SECRET_KEY}",
         "Content-Type": "application/json",
@@ -96,15 +93,8 @@ def initialize_payment(request):
     }
 
     try:
-        print("🚀 Sending request to Flutterwave...", file=sys.stderr)
-        res = requests.post(
-            "https://api.flutterwave.com/v3/payments",
-            headers=headers,
-            json=payload,
-            timeout=10,
-        )
+        res = requests.post("https://api.flutterwave.com/v3/payments", headers=headers, json=payload, timeout=10)
         result = res.json()
-        print("✅ Flutterwave response:", result, file=sys.stderr)
     except Exception as e:
         return render(request, "error.html", {"message": f"Flutterwave request failed: {e}"})
 
@@ -112,6 +102,7 @@ def initialize_payment(request):
         return redirect(result["data"]["link"])
     else:
         return render(request, "error.html", {"message": f"Flutterwave Error: {result.get('message')}"})
+
 
 
 # ===========================================
@@ -131,10 +122,8 @@ def verify_payment(request):
     url = f"https://api.flutterwave.com/v3/transactions/{transaction_id}/verify"
 
     try:
-        print("🔎 Verifying payment with Flutterwave...", file=sys.stderr)
         res = requests.get(url, headers=headers, timeout=10)
         response_data = res.json()
-        print("✅ Flutterwave verify response:", response_data, file=sys.stderr)
     except Exception as e:
         return render(request, "error.html", {"message": f"Verification failed: {e}"})
 
@@ -143,45 +132,48 @@ def verify_payment(request):
         reference = data.get("tx_ref")
         amount = data.get("amount")
 
-        # ✅ Retrieve saved payment (already created earlier)
+        # ✅ Get existing payment
         payment = Payment.objects.filter(payment_reference=reference).first()
         if payment:
             payment.status = "successful"
             payment.amount = amount
             payment.save()
         else:
-            # fallback (should not normally happen)
+            # Fallback (if session lost)
+            session_data = request.session.get("payment_data", {})
             payment = Payment.objects.create(
-                payment_reference=reference,
+                student_name=session_data.get("student_name", "Unknown"),
+                student_class=session_data.get("student_class", "N/A"),
+                session=session_data.get("session", ""),
+                term=session_data.get("term", ""),
+                parent_email=session_data.get("parent_email", data.get("customer", {}).get("email")),
                 amount=amount,
+                payment_reference=reference,
                 status="successful",
-                student_name="Unknown",
             )
 
-        # ✅ Send confirmation email
+        # ✅ Email confirmation
         subject = "Payment Confirmation - Sunshine Academy"
         message = (
             f"Dear Parent,\n\n"
-            f"Your payment of ₦{amount:,.2f} was successful.\n\n"
+            f"Your payment of ₦{amount:,.2f} was successful.\n"
+            f"Student: {payment.student_name}\n"
+            f"Class: {payment.student_class}\n"
+            f"Session: {payment.session}\n"
+            f"Term: {payment.term}\n"
             f"Reference: {reference}\n\n"
             f"Thank you for choosing Sunshine Academy.\n\n"
             f"Best regards,\nSunshine Academy Accounts Office"
         )
-        send_mail(
-            subject,
-            message,
-            settings.EMAIL_HOST_USER,
-            [payment.parent_email],
-            fail_silently=True,
-        )
+        send_mail(subject, message, settings.EMAIL_HOST_USER, [payment.parent_email], fail_silently=True)
 
         context = {
             "reference": reference,
             "amount": amount,
             "email": payment.parent_email,
             "student_name": payment.student_name,
-            "session": payment.session,
             "student_class": payment.student_class,
+            "session": payment.session,
             "term": payment.term,
         }
         return render(request, "payments/payment_success.html", context)
@@ -190,13 +182,14 @@ def verify_payment(request):
         return render(request, "payments/payment_failed.html")
 
 
+
 # ===========================================
 # DOWNLOAD RECEIPT
 # ===========================================
 def download_receipt(request, reference):
     pdf_buffer = generate_receipt_pdf(reference)
     response = HttpResponse(pdf_buffer, content_type="application/pdf")
-    response["Content-Disposition"] = f'attachment; filename="Receipt_{reference}.pdf"'
+    response["Content-Disposition"] = f'attachment; filename=\"Receipt_{reference}.pdf\"'
     return response
 
 
