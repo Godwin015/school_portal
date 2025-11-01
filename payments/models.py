@@ -8,7 +8,7 @@ class Payment(models.Model):
     parent_email = models.EmailField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_reference = models.CharField(max_length=100, unique=True)
-    status = models.CharField(max_length=50, default='successful')  # ✅ ADD THIS
+    status = models.CharField(max_length=50, default='successful')  # ✅ Payment status
     date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
