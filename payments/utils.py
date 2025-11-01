@@ -1,6 +1,5 @@
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-from django.http import HttpResponse
 from io import BytesIO
 from .models import Payment
 import qrcode
@@ -42,17 +41,17 @@ def generate_receipt_pdf(reference):
         p.drawString(220, y, str(value))
         y -= 25
 
-    # === QR CODE ===
-    qr_data = f"Payment Reference: {payment.payment_reference}\nStatus: {payment.status}\nAmount: ₦{payment.amount:,.2f}"
+    # === QR CODE FIX ===
+    qr_data = f"Payment Ref: {payment.payment_reference}\nStatus: {payment.status}\nAmount: ₦{payment.amount:,.2f}"
     qr_image = qrcode.make(qr_data)
 
-    # ✅ Convert QR image to bytes for ReportLab
-    qr_buffer = BytesIO()
-    qr_image.save(qr_buffer, format='PNG')
-    qr_buffer.seek(0)
-    qr_reader = ImageReader(qr_buffer)
+    # ✅ Convert QR code image to bytes (so ReportLab can use it)
+    qr_bytes = BytesIO()
+    qr_image.save(qr_bytes, format="PNG")
+    qr_bytes.seek(0)
+    qr_reader = ImageReader(qr_bytes)
 
-    # Draw QR code on PDF
+    # Draw QR code image on PDF
     p.drawImage(qr_reader, width - 200, height - 250, 100, 100)
 
     # === FOOTER ===
