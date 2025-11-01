@@ -41,22 +41,25 @@ def generate_receipt_pdf(reference):
         p.drawString(220, y, str(value))
         y -= 25
 
-    # === QR CODE FIX ===
-    qr_data = f"Payment Ref: {payment.payment_reference}\nStatus: {payment.status}\nAmount: ₦{payment.amount:,.2f}"
+    # === QR CODE (with verification URL) ===
+    verification_url = f"https://school-payment-portal.onrender.com/payments/receipt/{payment.payment_reference}/"
+    qr_data = f"Verify Payment Online:\n{verification_url}\n\nStudent: {payment.student_name}\nAmount: ₦{payment.amount:,.2f}\nStatus: {payment.status}"
+
     qr_image = qrcode.make(qr_data)
 
-    # ✅ Convert QR code image to bytes (so ReportLab can use it)
+    # ✅ Convert QR code image to bytes
     qr_bytes = BytesIO()
     qr_image.save(qr_bytes, format="PNG")
     qr_bytes.seek(0)
     qr_reader = ImageReader(qr_bytes)
 
-    # Draw QR code image on PDF
+    # Draw QR code on the PDF
     p.drawImage(qr_reader, width - 200, height - 250, 100, 100)
 
     # === FOOTER ===
     p.setFont("Helvetica-Oblique", 10)
-    p.drawCentredString(width / 2, 80, "This is a system-generated receipt. No signature required.")
+    p.drawCentredString(width / 2, 80, "Scan the QR code to verify this payment online.")
+    p.drawCentredString(width / 2, 65, "This is a system-generated receipt. No signature required.")
 
     # Finalize PDF
     p.showPage()
