@@ -2,6 +2,7 @@ from django.db import models
 
 class Payment(models.Model):
     student_name = models.CharField(max_length=255)
+    student_class = models.CharField(max_length=50, blank=True, null=True)
     session = models.CharField(max_length=20)
     term = models.CharField(max_length=20)
     parent_email = models.EmailField()
@@ -11,3 +12,4 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.student_name} - {self.payment_reference}"
+
