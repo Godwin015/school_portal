@@ -2,12 +2,13 @@ from django.db import models
 
 class Payment(models.Model):
     student_name = models.CharField(max_length=255)
-    student_class = models.CharField(max_length=100)  # ✅ Newly added field
+    student_class = models.CharField(max_length=100)  # ✅ Added field
     session = models.CharField(max_length=20)
     term = models.CharField(max_length=20)
     parent_email = models.EmailField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_reference = models.CharField(max_length=100, unique=True)
+    status = models.CharField(max_length=50, default='successful')  # ✅ Added field for receipt
     date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
