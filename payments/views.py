@@ -14,7 +14,6 @@ from .utils import generate_receipt_pdf
 # ===========================================
 def pay_fees(request):
     if request.method == 'POST':
-        # ✅ Match field names exactly as in your HTML form
         student_name = request.POST.get('student_name')
         session = request.POST.get('session')
         student_class = request.POST.get('student_class')
@@ -22,10 +21,11 @@ def pay_fees(request):
         parent_email = request.POST.get('parent_email')
         amount = request.POST.get('amount')
 
-        # ✅ Verify all required fields exist
+        # Validate all fields
         if not all([student_name, session, student_class, term, parent_email, amount]):
             return render(request, 'error.html', {'message': 'All fields are required.'})
 
+        # Save form data to session
         context = {
             'student_name': student_name,
             'session': session,
@@ -34,13 +34,10 @@ def pay_fees(request):
             'parent_email': parent_email,
             'amount': amount,
         }
-
-        # ✅ Save to session (optional continuity)
         request.session['payment_data'] = context
 
         return render(request, 'payments/payment_confirm.html', context)
 
-    # Show the payment form
     return render(request, 'payments/payment_form.html')
 
 
@@ -51,7 +48,6 @@ def pay_fees(request):
 def initialize_payment(request):
     print("📢 initialize_payment() triggered", file=sys.stderr)
 
-    # Retrieve from POST or session
     data = request.session.get('payment_data', {})
     email = request.POST.get('parent_email') or data.get('parent_email')
     amount = request.POST.get('amount') or data.get('amount')
@@ -66,17 +62,32 @@ def initialize_payment(request):
     except ValueError:
         return render(request, "error.html", {"message": "Invalid amount format"})
 
+    # ✅ Create transaction reference
+    tx_ref = f"TX-{email.replace('@', '_')}"
+
+    # ✅ Save payment record before redirecting
+    Payment.objects.create(
+        student_name=data.get("student_name"),
+        student_class=data.get("student_class"),
+        session=data.get("session"),
+        term=data.get("term"),
+        parent_email=email,
+        amount=amount,
+        payment_reference=tx_ref,
+        status="pending"
+    )
+
     # ✅ Prepare Flutterwave request
     headers = {
         "Authorization": f"Bearer {settings.FLW_SECRET_KEY}",
         "Content-Type": "application/json",
     }
     payload = {
-        "tx_ref": f"TX-{email.replace('@', '_')}",
+        "tx_ref": tx_ref,
         "amount": amount,
         "currency": "NGN",
         "redirect_url": "https://school-payment-portal.onrender.com/payments/verify/",
-        "customer": {"email": email, "phonenumber": "", "name": email.split('@')[0]},
+        "customer": {"email": email, "phonenumber": "", "name": data.get("student_name")},
         "customizations": {
             "title": "Sunshine Academy Payment",
             "description": "School fee payment for student",
@@ -107,12 +118,10 @@ def initialize_payment(request):
 # VERIFY PAYMENT
 # ===========================================
 def verify_payment(request):
-    import sys
     print("📢 verify_payment() triggered", file=sys.stderr)
 
     transaction_id = request.GET.get("transaction_id")
     if not transaction_id:
-        print("⚠️ Missing transaction_id", file=sys.stderr)
         return render(request, "error.html", {"message": "Transaction ID missing"})
 
     headers = {
@@ -127,33 +136,27 @@ def verify_payment(request):
         response_data = res.json()
         print("✅ Flutterwave verify response:", response_data, file=sys.stderr)
     except Exception as e:
-        print("⚠️ Flutterwave verification failed:", str(e), file=sys.stderr)
         return render(request, "error.html", {"message": f"Verification failed: {e}"})
 
     data = response_data.get("data", {})
     if data.get("status") == "successful":
         reference = data.get("tx_ref")
         amount = data.get("amount")
-        email = data.get("customer", {}).get("email")
 
-        # ✅ Get other fields from session if available
-        session_data = request.session.get("payment_data", {})
-        student_name = session_data.get("student_name", "")
-        session_val = session_data.get("session", "")
-        student_class = session_data.get("student_class", "")
-        term = session_data.get("term", "")
-
-        # ✅ Save or update payment
-        payment, created = Payment.objects.update_or_create(
-            payment_reference=reference,
-            defaults={
-                "student_name": student_name,
-                "session": session_val,
-                "term": term,
-                "parent_email": email,
-                "amount": amount,
-            },
-        )
+        # ✅ Retrieve saved payment (already created earlier)
+        payment = Payment.objects.filter(payment_reference=reference).first()
+        if payment:
+            payment.status = "successful"
+            payment.amount = amount
+            payment.save()
+        else:
+            # fallback (should not normally happen)
+            payment = Payment.objects.create(
+                payment_reference=reference,
+                amount=amount,
+                status="successful",
+                student_name="Unknown",
+            )
 
         # ✅ Send confirmation email
         subject = "Payment Confirmation - Sunshine Academy"
@@ -168,24 +171,24 @@ def verify_payment(request):
             subject,
             message,
             settings.EMAIL_HOST_USER,
-            [email],
+            [payment.parent_email],
             fail_silently=True,
         )
 
-        # ✅ Render success page
         context = {
             "reference": reference,
             "amount": amount,
-            "email": email,
-            "student_name": student_name,
-            "session": session_val,
-            "student_class": student_class,
-            "term": term,
+            "email": payment.parent_email,
+            "student_name": payment.student_name,
+            "session": payment.session,
+            "student_class": payment.student_class,
+            "term": payment.term,
         }
         return render(request, "payments/payment_success.html", context)
+
     else:
-        print("❌ Payment verification failed:", response_data, file=sys.stderr)
         return render(request, "payments/payment_failed.html")
+
 
 # ===========================================
 # DOWNLOAD RECEIPT
@@ -202,4 +205,3 @@ def download_receipt(request, reference):
 # ===========================================
 def about(request):
     return render(request, "about.html")
-
