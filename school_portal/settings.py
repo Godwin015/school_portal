@@ -95,7 +95,6 @@ STATICFILES_DIRS = [
     BASE_DIR / "payments" / "static",  # app-level static
 ]
 
-
 # ===========================
 # TEMPLATES CONFIGURATION
 # ===========================
