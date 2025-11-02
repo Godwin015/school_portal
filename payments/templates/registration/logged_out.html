@@ -1,0 +1,23 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Logged Out - Sunshine Academy{% endblock %}
+
+{% block content %}
+<div style="text-align:center; padding:60px; font-family: 'Segoe UI', sans-serif;">
+    <img src="{% static 'img/logo.png' %}" alt="Sunshine Academy" style="width:90px; margin-bottom:20px;">
+    <h1 style="color:#1e90ff; font-size:2rem;">You’ve been logged out successfully.</h1>
+    <p style="color:#555; margin-top:10px; font-size:1.1rem;">
+        Thank you for using the <strong>Sunshine Academy Admin Portal</strong>.
+    </p>
+    <p style="margin-top:20px;">
+        <a href="/admin/login/" style="background:linear-gradient(90deg,#1e90ff,#20c997);
+           color:white; padding:10px 20px; border-radius:6px; text-decoration:none; font-weight:500;">
+            🔑 Log in again
+        </a>
+        <a href="/" style="margin-left:15px; color:#1e90ff; text-decoration:none; font-weight:500;">
+            🏠 Return to Homepage
+        </a>
+    </p>
+</div>
+{% endblock %}
