@@ -89,7 +89,7 @@ else:
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# ✅ Add this so app static folders are included
+# ✅ Only include app-level static directory
 STATICFILES_DIRS = [
     BASE_DIR / "payments" / "static",
 ]
@@ -130,6 +130,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ===========================
 LOGIN_REDIRECT_URL = '/admin/'
 LOGOUT_REDIRECT_URL = '/admin/logout/'
+
 
 
 
