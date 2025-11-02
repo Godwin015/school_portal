@@ -1,0 +1,19 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}Sunshine Academy Admin{% endblock %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'css/admin_custom.css' %}">
+{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">🌞 Sunshine Academy Portal</a>
+</h1>
+{% endblock %}
+
+{% block nav-global %}
+    <div style="padding-right: 15px; color: #fff;">Welcome to your admin dashboard</div>
+{% endblock %}
