@@ -1,0 +1,49 @@
+/* 🌿 Sunshine Academy Admin Theme */
+body.login {
+    background: linear-gradient(135deg, #1e90ff, #20c997);
+    color: #fff;
+}
+
+#header {
+    background: linear-gradient(90deg, #1e90ff, #20c997);
+    color: white;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#branding h1 a {
+    color: #fff !important;
+}
+
+.module caption {
+    background-color: #20c997 !important;
+    color: white !important;
+    font-weight: 600;
+}
+
+#changelist-filter h2, .model-{{ model_name }} {
+    color: #1e90ff;
+}
+
+a, a:visited {
+    color: #1e90ff;
+}
+
+a:hover {
+    color: #20c997;
+}
+
+.button, input[type=submit], .submit-row input {
+    background: linear-gradient(90deg, #20c997, #1e90ff);
+    border: none;
+    color: #fff;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-weight: 500;
+    transition: 0.3s ease;
+}
+
+.button:hover, input[type=submit]:hover {
+    opacity: 0.9;
+    transform: scale(1.03);
+}
