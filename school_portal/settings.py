@@ -89,10 +89,7 @@ else:
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# ✅ Only include app-level static directory
-STATICFILES_DIRS = [
-    BASE_DIR / "payments" / "static",
-]
+# 🚫 Remove STATICFILES_DIRS entirely — Django will auto-discover
 
 # ===========================
 # TEMPLATES CONFIGURATION
@@ -130,6 +127,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ===========================
 LOGIN_REDIRECT_URL = '/admin/'
 LOGOUT_REDIRECT_URL = '/admin/logout/'
+
 
 
 
