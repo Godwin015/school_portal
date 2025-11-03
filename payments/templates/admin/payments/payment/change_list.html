@@ -1,0 +1,10 @@
+{% extends "admin/change_list.html" %}
+
+{% block result_list %}
+    {{ block.super }}
+    {% if total_amount %}
+        <div style="margin: 20px; text-align: right; font-weight: bold; color: #20c997;">
+            💰 Total Amount Paid: ₦{{ total_amount|floatformat:2 }}
+        </div>
+    {% endif %}
+{% endblock %}
