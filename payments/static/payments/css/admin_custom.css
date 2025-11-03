@@ -1,18 +1,66 @@
-/* 🌿 Sunshine Academy Admin Theme */
+/* 🌞 Sunshine Academy Admin Theme */
+
+/* === LOGIN PAGE STYLING === */
 body.login {
     background: linear-gradient(135deg, #1e90ff, #20c997);
     color: #fff;
 }
 
+.login #container {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 40px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.login #header h1 a {
+    color: #fff !important;
+    font-size: 26px;
+    font-weight: bold;
+    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+/* Make login form inputs look sleek */
+.login .form-row label {
+    color: #fff;
+}
+
+.login input {
+    border-radius: 8px;
+    border: 1px solid #20c997;
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #333;
+}
+
+.login input[type="submit"] {
+    background: linear-gradient(90deg, #20c997, #1e90ff);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    padding: 10px 20px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.login input[type="submit"]:hover {
+    transform: scale(1.03);
+    opacity: 0.9;
+}
+
+/* === DASHBOARD HEADER === */
 #header {
     background: linear-gradient(90deg, #1e90ff, #20c997);
     color: white;
     font-weight: bold;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 #branding h1 a {
     color: #fff !important;
+    text-decoration: none;
 }
 
 .module caption {
@@ -21,14 +69,9 @@ body.login {
     font-weight: 600;
 }
 
-#changelist-filter h2, .model-{{ model_name }} {
+a {
     color: #1e90ff;
 }
-
-a, a:visited {
-    color: #1e90ff;
-}
-
 a:hover {
     color: #20c997;
 }
