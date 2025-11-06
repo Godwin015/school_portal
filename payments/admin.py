@@ -1,6 +1,10 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.db.models import Sum
 from .models import Payment
+from django.contrib.admin.models import LogEntry
+from django.urls import path
+from django.shortcuts import redirect
+from django.utils.html import format_html
 
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
@@ -25,3 +29,31 @@ class PaymentAdmin(admin.ModelAdmin):
         except (AttributeError, KeyError):
             pass
         return response
+
+# ✅ Custom admin view to clear recent actions
+@admin.register(LogEntry)
+class LogEntryAdmin(admin.ModelAdmin):
+    list_display = ("user", "content_type", "object_repr", "action_flag", "action_time")
+    readonly_fields = [f.name for f in LogEntry._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return True  # allow deletion if needed
+
+
+# ✅ Add custom URL to clear logs
+def clear_recent_actions(request):
+    LogEntry.objects.all().delete()
+    messages.success(request, "✅ All recent admin actions have been cleared.")
+    return redirect("/admin/")
+
+
+# ✅ Extend the admin site URLs
+admin.site.get_urls = (lambda get_urls: 
+    lambda: [path("clear-recent-actions/", clear_recent_actions, name="clear_recent_actions")] + get_urls()
+)(admin.site.get_urls)
