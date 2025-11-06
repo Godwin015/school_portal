@@ -1,1 +1,41 @@
- 
+{% extends "admin/index.html" %}
+{% load log static %}
+
+{% block sidebar %}
+    <div class="module">
+        <h2>Recent Actions (Last 40)</h2>
+        {% get_admin_log 40 as admin_log for_user user %}
+        {% if not admin_log %}
+            <p>No recent actions yet.</p>
+        {% else %}
+            <ul class="actionlist">
+                {% for entry in admin_log %}
+                    <li class="{% if entry.is_addition %}addlink{% elif entry.is_change %}changelink{% elif entry.is_deletion %}deletelink{% endif %}">
+                        {{ entry.object_repr|escape }}
+                        {% if entry.content_type %}
+                            (<a href="{% url 'admin:app_list' entry.content_type.app_label %}">{{ entry.content_type.app_label }}</a>)
+                        {% endif %}
+                        — {{ entry.get_action_flag_display }}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+
+    <div class="module" style="margin-top: 15px;">
+        <form action="{% url 'admin:clear_recent_actions' %}" method="post" style="text-align: center;">
+            {% csrf_token %}
+            <button type="submit"
+                    style="background: linear-gradient(90deg, #20c997, #1e90ff);
+                           border: none;
+                           color: white;
+                           padding: 8px 15px;
+                           border-radius: 8px;
+                           cursor: pointer;
+                           font-weight: 600;
+                           box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                🧹 Clear Recent Actions
+            </button>
+        </form>
+    </div>
+{% endblock %}
